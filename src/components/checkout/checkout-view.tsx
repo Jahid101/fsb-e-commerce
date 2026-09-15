@@ -193,6 +193,7 @@ export function CheckoutView() {
                   <Input
                     id="firstName"
                     autoComplete="given-name"
+                    placeholder="Alex"
                     aria-invalid={Boolean(errors.firstName)}
                     {...register("firstName")}
                   />
@@ -207,6 +208,7 @@ export function CheckoutView() {
                   <Input
                     id="lastName"
                     autoComplete="family-name"
+                    placeholder="Morgan"
                     aria-invalid={Boolean(errors.lastName)}
                     {...register("lastName")}
                   />
@@ -222,6 +224,7 @@ export function CheckoutView() {
                 <Input
                   id="address"
                   autoComplete="street-address"
+                  placeholder="123 Main Street"
                   aria-invalid={Boolean(errors.address)}
                   {...register("address")}
                 />
@@ -237,6 +240,7 @@ export function CheckoutView() {
                   <Input
                     id="city"
                     autoComplete="address-level2"
+                    placeholder="New York"
                     aria-invalid={Boolean(errors.city)}
                     {...register("city")}
                   />
@@ -251,6 +255,7 @@ export function CheckoutView() {
                   <Input
                     id="zip"
                     autoComplete="postal-code"
+                    placeholder="10001"
                     aria-invalid={Boolean(errors.zip)}
                     {...register("zip")}
                   />
@@ -265,6 +270,7 @@ export function CheckoutView() {
                   <Input
                     id="country"
                     autoComplete="country-name"
+                    placeholder="United States"
                     aria-invalid={Boolean(errors.country)}
                     {...register("country")}
                   />
@@ -288,6 +294,7 @@ export function CheckoutView() {
                 <Input
                   id="cardName"
                   autoComplete="cc-name"
+                  placeholder="Alex Morgan"
                   aria-invalid={Boolean(errors.cardName)}
                   {...register("cardName")}
                 />

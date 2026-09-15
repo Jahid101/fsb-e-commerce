@@ -60,7 +60,7 @@ export default function HomePage() {
               style={{ animationDelay: "0ms" }}
             >
               <Sparkles className="size-3.5" />
-              Fresh picks, fast shipping
+              Fresh picks, Fast shipping
             </span>
 
             <h1
@@ -96,14 +96,14 @@ export default function HomePage() {
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
-              <Button
+              {/* <Button
                 size="lg"
                 variant="outline"
                 className="border-white/40 bg-white/10 text-white backdrop-blur hover:bg-white/20"
                 asChild
               >
                 <Link href="/product/1">View a product page</Link>
-              </Button>
+              </Button> */}
             </div>
           </div>
 
