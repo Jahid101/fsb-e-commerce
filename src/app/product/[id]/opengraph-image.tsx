@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 
 import { getProduct } from "@/lib/api/products";
 import { categoryHue } from "@/lib/category-color";
@@ -10,26 +11,17 @@ export const size = {
 };
 export const contentType = "image/png";
 
-const EMBEDDABLE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg"]);
-
-function toDataUri(bytes: Uint8Array, mimeType: string): string {
-  let binary = "";
-  const chunk = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
-  }
-  return `data:${mimeType};base64,${btoa(binary)}`;
-}
-
 async function fetchImageData(url: string): Promise<string | null> {
   try {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) return null;
-    const contentTypeHeader = response.headers.get("content-type") ?? "";
-    const mimeType = contentTypeHeader.split(";")[0].trim().toLowerCase();
-    if (!EMBEDDABLE_TYPES.has(mimeType)) return null;
-    const buffer = await response.arrayBuffer();
-    return toDataUri(new Uint8Array(buffer), mimeType);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const png = await sharp(buffer, { failOn: "none" })
+      .rotate()
+      .resize(760, 760, { fit: "cover" })
+      .png()
+      .toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
   } catch {
     return null;
   }
