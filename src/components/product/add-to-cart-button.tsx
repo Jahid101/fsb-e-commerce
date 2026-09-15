@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { ShoppingCart } from "lucide-react";
+import * as React from "react";
+import { Check, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,15 @@ export function AddToCartButton({
   size = "default",
 }: AddToCartButtonProps) {
   const addItem = useCartStore((state) => state.addItem);
-  const [pending, startTransition] = useTransition();
+  const [pending, startTransition] = React.useTransition();
+  const [added, setAdded] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const outOfStock = stock <= 0;
 
@@ -41,20 +49,37 @@ export function AddToCartButton({
     );
   }
 
+  const handleAdd = () => {
+    if (added) return;
+    startTransition(() => {
+      addItem({ id, title, price, thumbnail, stock }, quantity);
+      toast.success(`${title.slice(0, 40)} added to cart`);
+    });
+    setAdded(true);
+    timerRef.current = setTimeout(() => setAdded(false), 1600);
+  };
+
   return (
     <Button
       className={className}
       size={size}
       disabled={pending}
-      onClick={() =>
-        startTransition(() => {
-          addItem({ id, title, price, thumbnail, stock }, quantity);
-          toast.success(`${title.slice(0, 40)} added to cart`);
-        })
-      }
+      onClick={handleAdd}
+      variant={added ? "outline" : undefined}
+      aria-live="polite"
     >
-      <ShoppingCart className="size-4" />
-      Add to cart
+      <span
+        className={cnIconTransition(added)}
+      >
+        {added ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+      </span>
+      {added ? "Added!" : "Add to cart"}
     </Button>
   );
+}
+
+function cnIconTransition(added: boolean) {
+  return added
+    ? "text-emerald-500 transition-transform duration-200 scale-110 [&>svg]:text-emerald-500"
+    : "transition-transform duration-200";
 }
