@@ -15,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { useFilterRouter } from "@/hooks/use-filter-router";
+import { clamp, formatPrice } from "@/lib/format";
 import type { CategorySummary } from "@/lib/api/types";
 
 interface FilterPanelProps {
@@ -49,18 +51,31 @@ export function FilterPanel({
   const priceLte = searchParams.get("price_lte") ?? "";
 
   const [searchValue, setSearchValue] = React.useState(q);
-  const [minValue, setMinValue] = React.useState(priceGte);
-  const [maxValue, setMaxValue] = React.useState(priceLte);
+
+  const priceMin = Math.floor(priceBounds.min);
+  const priceMax = Math.ceil(priceBounds.max);
+  const parsedGte = priceGte ? parseFloat(priceGte) : NaN;
+  const parsedLte = priceLte ? parseFloat(priceLte) : NaN;
+  const [minPrice, setMinPrice] = React.useState(
+    Number.isFinite(parsedGte) ? clamp(parsedGte, priceMin, priceMax) : priceMin
+  );
+  const [maxPrice, setMaxPrice] = React.useState(
+    Number.isFinite(parsedLte) ? clamp(parsedLte, priceMin, priceMax) : priceMax
+  );
 
   React.useEffect(() => {
     setSearchValue(q);
   }, [q]);
   React.useEffect(() => {
-    setMinValue(priceGte);
-  }, [priceGte]);
+    setMinPrice(
+      Number.isFinite(parsedGte) ? clamp(parsedGte, priceMin, priceMax) : priceMin
+    );
+  }, [priceGte, priceMin, priceMax]);
   React.useEffect(() => {
-    setMaxValue(priceLte);
-  }, [priceLte]);
+    setMaxPrice(
+      Number.isFinite(parsedLte) ? clamp(parsedLte, priceMin, priceMax) : priceMax
+    );
+  }, [priceLte, priceMin, priceMax]);
 
   const debounceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -179,69 +194,38 @@ export function FilterPanel({
       <Separator />
 
       <div>
-        <Label className="mb-2 block">
-          Price range — ${priceBounds.min.toFixed(2)} to ${priceBounds.max.toFixed(2)}
-        </Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            placeholder="Min"
-            aria-label="Minimum price"
-            value={minValue}
-            onChange={(event) => setMinValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                update(
-                  {
-                    price_gte: minValue || null,
-                    price_lte: maxValue || null,
-                    _page: null,
-                  },
-                  { resetPage: true }
-                );
-              }
-            }}
-          />
-          <span className="text-muted-foreground">–</span>
-          <Input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            placeholder="Max"
-            aria-label="Maximum price"
-            value={maxValue}
-            onChange={(event) => setMaxValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                update(
-                  {
-                    price_gte: minValue || null,
-                    price_lte: maxValue || null,
-                    _page: null,
-                  },
-                  { resetPage: true }
-                );
-              }
-            }}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              update(
-                {
-                  price_gte: minValue || null,
-                  price_lte: maxValue || null,
-                  _page: null,
-                },
-                { resetPage: true }
-              )
-            }
-          >
-            Apply
-          </Button>
+        <div className="space-y-2 items-center justify-between gap-2">
+          <Label>Price range</Label>
+          <p className="text-sm font-medium text-primary tabular-nums">
+            {formatPrice(minPrice)} – {formatPrice(maxPrice)}
+          </p>
+        </div>
+        <Slider
+          aria-label="Price range"
+          min={priceMin}
+          max={priceMax}
+          step={1}
+          value={[minPrice, maxPrice]}
+          onValueChange={(values) => {
+            setMinPrice(values[0]);
+            setMaxPrice(values[1]);
+          }}
+          onValueCommit={(values) =>
+            update(
+              {
+                price_gte:
+                  values[0] > priceMin ? String(values[0]) : null,
+                price_lte: values[1] < priceMax ? String(values[1]) : null,
+                _page: null,
+              },
+              { resetPage: true }
+            )
+          }
+          className="py-2"
+        />
+        <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
+          <span>{formatPrice(priceMin)}</span>
+          <span>{formatPrice(priceMax)}</span>
         </div>
       </div>
 
