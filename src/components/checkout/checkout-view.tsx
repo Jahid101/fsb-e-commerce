@@ -118,7 +118,7 @@ export function CheckoutView() {
           <span className="font-semibold text-foreground">
             {formatPrice(total)}
           </span>
-          . This is a demo — no payment was processed.
+          . No payment was processed.
         </p>
         <Button className="mt-6" asChild>
           <Link href="/products">
@@ -407,8 +407,7 @@ export function CheckoutView() {
               <span>{formatPrice(total)}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Demo checkout — no payment is processed. Use any plausible test
-              card details.
+              No payment is processed. Use any plausible test card details.
             </p>
           </CardContent>
         </Card>

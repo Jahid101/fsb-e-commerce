@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: "Checkout",
   description:
     "Complete your order with a validated, React Hook Form + Zod checkout form.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function CheckoutPage() {
