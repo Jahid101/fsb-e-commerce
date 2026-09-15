@@ -17,10 +17,6 @@ import { getCategories, queryProducts } from "@/lib/api/products";
 import { categoryHue } from "@/lib/category-color";
 import { formatPrice } from "@/lib/format";
 
-export const metadata = {
-  title: "Home",
-};
-
 const PERKS = [
   { icon: Truck, label: "Free shipping over $100" },
   { icon: RotateCcw, label: "30-day easy returns" },

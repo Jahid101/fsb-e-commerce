@@ -19,11 +19,35 @@ import {
 import type { ProductQuery, ProductSort } from "@/lib/api/types";
 import { firstValue, numericParam } from "@/lib/url";
 
-export const metadata: Metadata = {
-  title: "Shop all products",
-  description:
-    "Browse and filter the full 582-product catalog by search, category, price, rating, sorting and pagination.",
-};
+export async function generateMetadata({
+  searchParams,
+}: ProductsPageProps): Promise<Metadata> {
+  const raw = await searchParams;
+  const params = Object.keys(raw).filter(
+    (key) => raw[key] !== undefined && raw[key] !== ""
+  );
+  const isCategoryPage = params.length === 1 && !!raw.category;
+
+  return {
+    title: "Shop all products",
+    description:
+      "Browse and filter a 500+ product catalog by search, category, price, rating, sorting and pagination.",
+    alternates: {
+      canonical: isCategoryPage
+        ? `/products?category=${encodeURIComponent(firstValue(raw.category))}`
+        : "/products",
+    },
+    openGraph: {
+      url: isCategoryPage
+        ? `/products?category=${encodeURIComponent(firstValue(raw.category))}`
+        : "/products",
+      title: "Shop all products",
+      description:
+        "Browse and filter a 500+ product catalog by search, category, price, rating, sorting and pagination.",
+      type: "website",
+    },
+  };
+}
 
 interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -88,8 +112,47 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const start = (meta.page - 1) * meta.limit + 1;
   const end = Math.min(meta.page * meta.limit, meta.total);
 
+  const breadcrumbItems = [
+    { name: "Home", item: "/" },
+    { name: "Shop", item: "/products" },
+    ...(category ? [{ name: category.replace(/-/g, " "), item: `/products?category=${encodeURIComponent(category)}` }] : []),
+  ];
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: `https://fsb-e-commerce.vercel.app${crumb.item}`,
+    })),
+  };
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: q ? `Search results for "${q}"` : category ? category.replace(/-/g, " ") : "All products",
+    numberOfItems: data.length,
+    itemListElement: data.map((product, index) => ({
+      "@type": "ListItem",
+      position: (meta.page - 1) * meta.limit + index + 1,
+      url: `https://fsb-e-commerce.vercel.app/product/${product.id}`,
+      name: product.title,
+      image: product.thumbnail,
+    })),
+  };
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">
           {q ? (

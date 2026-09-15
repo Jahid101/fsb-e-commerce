@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { SiteStructuredData } from "@/components/seo/site-structured-data";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,12 +19,68 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fsb-e-commerce.vercel.app"),
   title: {
-    default: "ShopHub — 500+ Products E-Commerce",
+    default: "ShopHub — Great Products, Honest Prices",
     template: "%s | ShopHub",
   },
   description:
-    "A full-featured e-commerce storefront with a 500+ product catalog: search, filters, sorting, pagination, product details, cart and checkout.",
+    "ShopHub is an online store with a 500+ product catalog across 24 categories: search, filter, compare prices, read reviews, and check out in minutes.",
+  applicationName: "ShopHub",
+  category: "eCommerce, Shopping",
+  keywords: [
+    "online shopping",
+    "ecommerce",
+    "electronics",
+    "beauty",
+    "fashion",
+    "home decor",
+    "discounts",
+    "ShopHub",
+  ],
+  authors: [{ name: "ShopHub" }],
+  creator: "ShopHub",
+  publisher: "ShopHub",
+  alternates: {
+    canonical: "/",
+  },
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "ShopHub",
+    locale: "en_US",
+    url: "/",
+    title: {
+      default: "ShopHub — Great Products, Honest Prices",
+      template: "%s | ShopHub",
+    },
+    description:
+      "ShopHub is an online store with a 500+ product catalog across 24 categories: search, filter, compare prices, read reviews, and check out in minutes.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ShopHub — Great Products, Honest Prices",
+    description:
+      "ShopHub is an online store with a 500+ product catalog across 24 categories: search, filter and check out in minutes.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,6 +102,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
+          <SiteStructuredData />
           <Toaster />
         </ThemeProvider>
       </body>

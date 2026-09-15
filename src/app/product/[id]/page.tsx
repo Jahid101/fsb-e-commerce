@@ -34,10 +34,13 @@ export async function generateMetadata({
   return {
     title: product.title,
     description: product.description.slice(0, 155),
+    alternates: {
+      canonical: `/product/${product.id}`,
+    },
     openGraph: {
       title: `${product.title} | ShopHub`,
       description: product.description.slice(0, 155),
-      images: [product.thumbnail],
+      url: `/product/${product.id}`,
       type: "website",
     },
   };
@@ -61,30 +64,81 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const stock = availabilityLabel(product);
   const original = originalPrice(product);
 
+  const productUrl = `https://fsb-e-commerce.vercel.app/product/${product.id}`;
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.title,
-    description: product.description,
-    image: product.images.length > 0 ? product.images : product.thumbnail,
-    sku: product.sku,
-    category: product.category,
-    brand: { "@type": "Brand", name: product.brand },
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "USD",
-      price: product.price,
-      availability:
-        product.stock > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-      url: `https://fsb-e-commerce.vercel.app/product/${product.id}`,
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviews.length,
-    },
+    "@graph": [
+      {
+        "@type": "Product",
+        "@id": `${productUrl}#product`,
+        name: product.title,
+        description: product.description,
+        image: product.images.length > 0 ? product.images : product.thumbnail,
+        sku: product.sku,
+        category: product.category,
+        brand: { "@type": "Brand", name: product.brand },
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "USD",
+          price: product.price,
+          itemCondition: "https://schema.org/NewCondition",
+          availability:
+            product.stock > 0
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+          url: productUrl,
+          seller: { "@id": "https://fsb-e-commerce.vercel.app/#organization" },
+        },
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: product.rating,
+          reviewCount: product.reviews.length,
+          bestRating: 5,
+          worstRating: 0,
+        },
+        review: product.reviews.map((review) => ({
+          "@type": "Review",
+          reviewBody: review.comment,
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: review.rating,
+            bestRating: 5,
+          },
+          author: { "@type": "Person", name: review.reviewerName },
+          datePublished: review.date,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://fsb-e-commerce.vercel.app/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Shop",
+            item: "https://fsb-e-commerce.vercel.app/products",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: product.category.replace(/-/g, " "),
+            item: `https://fsb-e-commerce.vercel.app/products?category=${encodeURIComponent(product.category)}`,
+          },
+          {
+            "@type": "ListItem",
+            position: 4,
+            name: product.title,
+            item: productUrl,
+          },
+        ],
+      },
+    ],
   };
 
   return (
