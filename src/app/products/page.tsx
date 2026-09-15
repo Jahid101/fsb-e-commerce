@@ -107,7 +107,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           )}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {meta.total} products · {categories.length} categories
+          Search, filter and sort the full catalog
         </p>
       </div>
 
@@ -150,8 +150,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
           {data.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {data.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {data.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${(index % 6) * 40}ms` }}
+                >
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           ) : (

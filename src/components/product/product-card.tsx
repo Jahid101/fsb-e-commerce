@@ -12,7 +12,7 @@ export function ProductCard({ product }: { product: Product }) {
   const slug = `/product/${product.id}`;
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden">
+    <Card className="group relative flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10">
       <div className="p-4 pb-0">
         <Link
           href={slug}
@@ -39,7 +39,7 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
 
         <h3 className="line-clamp-2 min-h-[2.5rem] leading-tight font-medium">
-          <Link href={slug} className="hover:underline">
+          <Link href={slug} className="transition-colors hover:text-primary">
             {product.title}
           </Link>
         </h3>
@@ -54,8 +54,15 @@ export function ProductCard({ product }: { product: Product }) {
               </Badge>
             )}
             {product.stock > 0 && product.stock <= 5 && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge
+                className="border-amber-200 bg-amber-100 text-amber-800 text-[10px] dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300"
+              >
                 Only {product.stock} left
+              </Badge>
+            )}
+            {product.discountPercentage > 0 && (
+              <Badge className="hidden border-rose-200 bg-rose-100 text-rose-800 text-[10px] sm:inline-flex dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300">
+                SALE
               </Badge>
             )}
           </div>

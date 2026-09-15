@@ -9,11 +9,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+        <Link href="/" className="group flex items-center gap-2 font-semibold">
+          <span className="flex size-7 items-center justify-center rounded-md bg-brand-gradient text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
             <Store className="size-4" />
           </span>
-          ShopHub
+          <span className="text-lg text-gradient">ShopHub</span>
         </Link>
 
         <nav className="hidden items-center gap-1 sm:flex">

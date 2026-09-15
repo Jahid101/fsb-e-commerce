@@ -1,8 +1,8 @@
-# ShopHub — Next.js E-Commerce Demo (500+ products)
+# ShopHub — Next.js E-Commerce (500+ products)
 
 A production-style e-commerce storefront built with the **Next.js App Router**, **TypeScript**, **Tailwind CSS v4** and **shadcn/ui**, backed by a locally bundled dataset of **582 products**.
 
-Live demo idea: deploy to Vercel — see [Deploy on Vercel](#deploy-on-vercel).
+Live site: [fsb-e-commerce.vercel.app](https://fsb-e-commerce.vercel.app/)
 
 ---
 
@@ -160,6 +160,6 @@ Or push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new
 
 ## Notes / omissions
 
-- Demo only: checkout simulates order placement and clears the cart; no payment backend.
+- Checkout is simulated: placing an order validates the form, shows a confirmation, and clears the cart; no payment backend.
 - Product images for generated variants come from `picsum.photos` seeds — internet required for full visuals.
 - `npm run lint` is not configured (the create-next-app scaffold didn’t include ESLint); type-checking runs as part of `npm run build`.

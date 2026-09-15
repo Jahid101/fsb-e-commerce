@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s | ShopHub",
   },
   description:
-    "A full-featured e-commerce demo with a 500+ product catalog: search, filters, sorting, pagination, product details, cart and checkout.",
+    "A full-featured e-commerce storefront with a 500+ product catalog: search, filters, sorting, pagination, product details, cart and checkout.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -78,7 +78,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         product.stock > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
-      url: `https://shophub-demo.vercel.app/product/${product.id}`,
+      url: `https://fsb-e-commerce.vercel.app/product/${product.id}`,
     },
     aggregateRating: {
       "@type": "AggregateRating",

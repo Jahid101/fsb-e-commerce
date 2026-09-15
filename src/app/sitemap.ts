@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { allProducts, getCategories } from "@/lib/api/products";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://shophub-demo.vercel.app";
+  const baseUrl = "https://fsb-e-commerce.vercel.app";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date() },

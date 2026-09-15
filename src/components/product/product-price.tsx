@@ -8,18 +8,21 @@ import { Badge } from "@/components/ui/badge";
 
 export function ProductPrice({ product }: { product: Product }) {
   const original = originalPrice(product);
+  const onSale = original > product.price + 0.005;
 
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="font-semibold text-foreground">
+      <span
+        className={onSale ? "font-bold text-primary" : "font-semibold text-foreground"}
+      >
         {formatPrice(product.price)}
       </span>
-      {original > product.price + 0.005 && (
+      {onSale && (
         <>
           <span className="text-sm text-muted-foreground line-through">
             {formatPrice(original)}
           </span>
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge className="border-rose-200 bg-rose-100 text-rose-800 text-[10px] dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300">
             -{Math.round(product.discountPercentage)}%
           </Badge>
         </>
