@@ -84,7 +84,6 @@ src/
 │   ├── format.ts  url.ts
 ├── store/cart.ts                  # Zustand cart store + selectors
 └── data/products.json             # bundled 582-product dataset
-scripts/tripler.mjs                # deterministic 194 → 582 dataset generator
 ```
 
 ---
@@ -92,7 +91,7 @@ scripts/tripler.mjs                # deterministic 194 → 582 dataset generator
 ## Data & API architecture
 
 - **No external API at runtime.** The app ships with `src/data/products.json` (582 products, 24 categories, full DummyJSON-style schema). This works identically on a laptop and on Vercel serverless.
-- **Dataset**: generated from DummyJSON’s public 194-product feed with `scripts/tripler.mjs` (seeded, deterministic): each source product is cloned 3× with unique `id`s (1–582) and `SKU`s, varied titles/prices/ratings/stocks, regenerated reviews and images. 5 products are intentionally `stock = 0` to exercise out-of-stock states.
+- **Dataset**: generated from DummyJSON’s public 194-product feed by a seeded, deterministic generator: each source product is cloned 3× with unique `id`s (1–582) and `SKU`s, varied titles/prices/ratings/stocks, regenerated reviews and images. 5 products are intentionally `stock = 0` to exercise out-of-stock states.
 - **Two consumption modes** share the same service functions:
 
   1. **In-process (default for pages)**. Server Components import `src/lib/api/products.ts` directly and call `queryProducts(...)`. No network hop, no duplicate fetches, works on serverless. `searchParams` from the URL are parsed into a typed `ProductQuery` and applied server-side.

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PackageOpen } from "lucide-react";
 
@@ -53,19 +54,45 @@ interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const VALID_SORTS = new Set(["featured", "price", "rating", "title"]);
+function buildCurrentHref(
+  raw: Record<string, string | string[] | undefined>
+): string {
+  const current = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    const first = firstValue(value);
+    if (first) current.set(key, first);
+  }
+  return current.size ? `/products?${current.toString()}` : "/products";
+}
 
-function parseQuery(raw: Record<string, string | string[] | undefined>): {
+const VALID_SORTS = new Set(["featured", "price", "rating", "title"]);
+const VALID_RATINGS = new Set([2, 3, 4, 4.5]);
+
+function parseQuery(
+  raw: Record<string, string | string[] | undefined>,
+  validCategories: Map<string, string>
+): {
   query: ProductQuery;
   buildHref: (page: number) => string;
   q: string;
-  category: string;
+  category?: string;
 } {
   const q = firstValue(raw.q);
-  const category = firstValue(raw.category);
+  const rawCategory = firstValue(raw.category);
+  const category = rawCategory
+    ? validCategories.get(rawCategory.toLowerCase())
+    : undefined;
   const priceGte = numericParam(raw.price_gte);
   const priceLte = numericParam(raw.price_lte);
-  const ratingGte = numericParam(raw.rating_gte);
+  const rawRating = numericParam(raw.rating_gte);
+  const ratingGte =
+    rawRating !== undefined && VALID_RATINGS.has(rawRating)
+      ? rawRating
+      : undefined;
+  const inverted =
+    priceGte !== undefined && priceLte !== undefined && priceGte > priceLte;
+  const gte = inverted ? undefined : priceGte;
+  const lte = inverted ? undefined : priceLte;
   const _sort = firstValue(raw._sort);
   const _order = firstValue(raw._order);
 
@@ -82,8 +109,8 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
     const next = new URLSearchParams();
     if (q) next.set("q", q);
     if (category) next.set("category", category);
-    if (priceGte !== undefined) next.set("price_gte", String(priceGte));
-    if (priceLte !== undefined) next.set("price_lte", String(priceLte));
+    if (gte !== undefined) next.set("price_gte", String(gte));
+    if (lte !== undefined) next.set("price_lte", String(lte));
     if (ratingGte !== undefined) next.set("rating_gte", String(ratingGte));
     if (sort !== "featured") next.set("_sort", sort);
     if (order === "asc" || order === "desc") next.set("_order", order);
@@ -93,7 +120,16 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
   };
 
   return {
-    query: { q, category, priceGte, priceLte, ratingGte, sort, order, page },
+    query: {
+      q,
+      category,
+      priceGte: gte,
+      priceLte: lte,
+      ratingGte,
+      sort,
+      order,
+      page,
+    },
     buildHref,
     q,
     category,
@@ -102,12 +138,19 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const raw = await searchParams;
-  const { query, buildHref, q, category } = parseQuery(raw);
+  const categories = getCategories();
+  const validCategories = new Map(
+    categories.map((c) => [c.name.toLowerCase(), c.name])
+  );
+  const { query, buildHref, q, category } = parseQuery(raw, validCategories);
 
   const result = queryProducts(query);
   const { data, meta } = result;
-  const categories = getCategories();
   const priceBounds = getPriceBounds();
+
+  if (buildHref(meta.page) !== buildCurrentHref(raw)) {
+    redirect(buildHref(meta.page));
+  }
 
   const start = (meta.page - 1) * meta.limit + 1;
   const end = Math.min(meta.page * meta.limit, meta.total);

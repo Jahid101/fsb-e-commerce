@@ -20,6 +20,23 @@ import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/format";
 
+function luhnCheck(value: string): boolean {
+  const digits = value.replaceAll(" ", "");
+  if (!/^\d+$/.test(digits)) return false;
+  let sum = 0;
+  let double = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let digit = Number(digits[i]);
+    if (double) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    double = !double;
+  }
+  return sum % 10 === 0;
+}
+
 const checkoutSchema = z.object({
   email: z.string().email("Enter a valid email address"),
   firstName: z.string().min(2, "First name is required"),
@@ -32,12 +49,19 @@ const checkoutSchema = z.object({
   cardNumber: z
     .string()
     .refine(
-      (value) => /^\d{13,19}$/.test(value.replaceAll(" ", "")),
+      (value) => {
+        const digits = value.replaceAll(" ", "");
+        return /^\d{13,19}$/.test(digits) && luhnCheck(digits);
+      },
       "Enter a valid card number"
     ),
   cardExpiry: z
     .string()
-    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Use MM/YY"),
+    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Use MM/YY")
+    .refine((value) => {
+      const [month, year] = value.split("/").map(Number);
+      return new Date(2000 + year, month, 1) > new Date();
+    }, "Card has expired"),
   cardCvc: z.string().regex(/^\d{3,4}$/, "3 or 4 digits"),
 });
 
@@ -50,7 +74,7 @@ function formatCardNumber(value: string): string {
   return value
     .replaceAll(" ", "")
     .replace(/\D/g, "")
-    .slice(0, 16)
+    .slice(0, 19)
     .replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
@@ -166,10 +190,17 @@ export function CheckoutView() {
                   autoComplete="email"
                   placeholder="you@example.com"
                   aria-invalid={Boolean(errors.email)}
+                  aria-describedby={
+                    errors.email ? "email-error" : undefined
+                  }
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive">
+                  <p
+                    id="email-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {errors.email.message}
                   </p>
                 )}
@@ -190,10 +221,17 @@ export function CheckoutView() {
                     autoComplete="given-name"
                     placeholder="Alex"
                     aria-invalid={Boolean(errors.firstName)}
+                    aria-describedby={
+                      errors.firstName ? "firstName-error" : undefined
+                    }
                     {...register("firstName")}
                   />
                   {errors.firstName && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="firstName-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.firstName.message}
                     </p>
                   )}
@@ -205,10 +243,17 @@ export function CheckoutView() {
                     autoComplete="family-name"
                     placeholder="Morgan"
                     aria-invalid={Boolean(errors.lastName)}
+                    aria-describedby={
+                      errors.lastName ? "lastName-error" : undefined
+                    }
                     {...register("lastName")}
                   />
                   {errors.lastName && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="lastName-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.lastName.message}
                     </p>
                   )}
@@ -221,10 +266,17 @@ export function CheckoutView() {
                   autoComplete="street-address"
                   placeholder="123 Main Street"
                   aria-invalid={Boolean(errors.address)}
+                  aria-describedby={
+                    errors.address ? "address-error" : undefined
+                  }
                   {...register("address")}
                 />
                 {errors.address && (
-                  <p className="text-sm text-destructive">
+                  <p
+                    id="address-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {errors.address.message}
                   </p>
                 )}
@@ -237,10 +289,17 @@ export function CheckoutView() {
                     autoComplete="address-level2"
                     placeholder="New York"
                     aria-invalid={Boolean(errors.city)}
+                    aria-describedby={
+                      errors.city ? "city-error" : undefined
+                    }
                     {...register("city")}
                   />
                   {errors.city && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="city-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.city.message}
                     </p>
                   )}
@@ -252,10 +311,15 @@ export function CheckoutView() {
                     autoComplete="postal-code"
                     placeholder="10001"
                     aria-invalid={Boolean(errors.zip)}
+                    aria-describedby={errors.zip ? "zip-error" : undefined}
                     {...register("zip")}
                   />
                   {errors.zip && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="zip-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.zip.message}
                     </p>
                   )}
@@ -267,10 +331,17 @@ export function CheckoutView() {
                     autoComplete="country-name"
                     placeholder="United States"
                     aria-invalid={Boolean(errors.country)}
+                    aria-describedby={
+                      errors.country ? "country-error" : undefined
+                    }
                     {...register("country")}
                   />
                   {errors.country && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="country-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.country.message}
                     </p>
                   )}
@@ -291,10 +362,17 @@ export function CheckoutView() {
                   autoComplete="cc-name"
                   placeholder="Alex Morgan"
                   aria-invalid={Boolean(errors.cardName)}
+                  aria-describedby={
+                    errors.cardName ? "cardName-error" : undefined
+                  }
                   {...register("cardName")}
                 />
                 {errors.cardName && (
-                  <p className="text-sm text-destructive">
+                  <p
+                    id="cardName-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {errors.cardName.message}
                   </p>
                 )}
@@ -307,6 +385,9 @@ export function CheckoutView() {
                   autoComplete="cc-number"
                   placeholder="1234 5678 9012 3456"
                   aria-invalid={Boolean(errors.cardNumber)}
+                  aria-describedby={
+                    errors.cardNumber ? "cardNumber-error" : undefined
+                  }
                   {...register("cardNumber", {
                     onChange: (event) => {
                       event.target.value = formatCardNumber(event.target.value);
@@ -314,7 +395,11 @@ export function CheckoutView() {
                   })}
                 />
                 {errors.cardNumber && (
-                  <p className="text-sm text-destructive">
+                  <p
+                    id="cardNumber-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {errors.cardNumber.message}
                   </p>
                 )}
@@ -328,6 +413,9 @@ export function CheckoutView() {
                     autoComplete="cc-exp"
                     placeholder="MM/YY"
                     aria-invalid={Boolean(errors.cardExpiry)}
+                    aria-describedby={
+                      errors.cardExpiry ? "cardExpiry-error" : undefined
+                    }
                     {...register("cardExpiry", {
                       onChange: (event) => {
                         event.target.value = formatExpiry(event.target.value);
@@ -335,7 +423,11 @@ export function CheckoutView() {
                     })}
                   />
                   {errors.cardExpiry && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="cardExpiry-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.cardExpiry.message}
                     </p>
                   )}
@@ -348,6 +440,9 @@ export function CheckoutView() {
                     autoComplete="cc-csc"
                     placeholder="123"
                     aria-invalid={Boolean(errors.cardCvc)}
+                    aria-describedby={
+                      errors.cardCvc ? "cardCvc-error" : undefined
+                    }
                     {...register("cardCvc", {
                       onChange: (event) => {
                         event.target.value = event.target.value.replace(
@@ -358,7 +453,11 @@ export function CheckoutView() {
                     })}
                   />
                   {errors.cardCvc && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="cardCvc-error"
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {errors.cardCvc.message}
                     </p>
                   )}
