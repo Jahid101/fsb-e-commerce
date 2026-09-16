@@ -1,11 +1,19 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { FilterPanel } from "@/components/products/filter-panel";
 import { SortSelect } from "@/components/products/sort-select";
 import { Pagination } from "@/components/products/pagination";
@@ -53,19 +61,45 @@ interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const VALID_SORTS = new Set(["featured", "price", "rating", "title"]);
+function buildCurrentHref(
+  raw: Record<string, string | string[] | undefined>
+): string {
+  const current = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    const first = firstValue(value);
+    if (first) current.set(key, first);
+  }
+  return current.size ? `/products?${current.toString()}` : "/products";
+}
 
-function parseQuery(raw: Record<string, string | string[] | undefined>): {
+const VALID_SORTS = new Set(["featured", "price", "rating", "title"]);
+const VALID_RATINGS = new Set([2, 3, 4, 4.5]);
+
+function parseQuery(
+  raw: Record<string, string | string[] | undefined>,
+  validCategories: Map<string, string>
+): {
   query: ProductQuery;
   buildHref: (page: number) => string;
   q: string;
-  category: string;
+  category?: string;
 } {
   const q = firstValue(raw.q);
-  const category = firstValue(raw.category);
+  const rawCategory = firstValue(raw.category);
+  const category = rawCategory
+    ? validCategories.get(rawCategory.toLowerCase())
+    : undefined;
   const priceGte = numericParam(raw.price_gte);
   const priceLte = numericParam(raw.price_lte);
-  const ratingGte = numericParam(raw.rating_gte);
+  const rawRating = numericParam(raw.rating_gte);
+  const ratingGte =
+    rawRating !== undefined && VALID_RATINGS.has(rawRating)
+      ? rawRating
+      : undefined;
+  const inverted =
+    priceGte !== undefined && priceLte !== undefined && priceGte > priceLte;
+  const gte = inverted ? undefined : priceGte;
+  const lte = inverted ? undefined : priceLte;
   const _sort = firstValue(raw._sort);
   const _order = firstValue(raw._order);
 
@@ -82,8 +116,8 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
     const next = new URLSearchParams();
     if (q) next.set("q", q);
     if (category) next.set("category", category);
-    if (priceGte !== undefined) next.set("price_gte", String(priceGte));
-    if (priceLte !== undefined) next.set("price_lte", String(priceLte));
+    if (gte !== undefined) next.set("price_gte", String(gte));
+    if (lte !== undefined) next.set("price_lte", String(lte));
     if (ratingGte !== undefined) next.set("rating_gte", String(ratingGte));
     if (sort !== "featured") next.set("_sort", sort);
     if (order === "asc" || order === "desc") next.set("_order", order);
@@ -93,7 +127,16 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
   };
 
   return {
-    query: { q, category, priceGte, priceLte, ratingGte, sort, order, page },
+    query: {
+      q,
+      category,
+      priceGte: gte,
+      priceLte: lte,
+      ratingGte,
+      sort,
+      order,
+      page,
+    },
     buildHref,
     q,
     category,
@@ -102,12 +145,19 @@ function parseQuery(raw: Record<string, string | string[] | undefined>): {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const raw = await searchParams;
-  const { query, buildHref, q, category } = parseQuery(raw);
+  const categories = getCategories();
+  const validCategories = new Map(
+    categories.map((c) => [c.name.toLowerCase(), c.name])
+  );
+  const { query, buildHref, q, category } = parseQuery(raw, validCategories);
 
   const result = queryProducts(query);
   const { data, meta } = result;
-  const categories = getCategories();
   const priceBounds = getPriceBounds();
+
+  if (buildHref(meta.page) !== buildCurrentHref(raw)) {
+    redirect(buildHref(meta.page));
+  }
 
   const start = (meta.page - 1) * meta.limit + 1;
   const end = Math.min(meta.page * meta.limit, meta.total);
@@ -175,7 +225,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:sticky lg:top-16 lg:h-fit">
+        <aside className="hidden lg:sticky lg:top-16 lg:block lg:h-fit">
           <Suspense
             fallback={
               <div className="flex flex-col gap-4">
@@ -195,18 +245,54 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </aside>
 
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              Showing{" "}
-              <span className="font-medium text-foreground">
-                {meta.total === 0 ? 0 : start}–{end}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{meta.total}</span>
-            </p>
-            <Suspense
-              fallback={<Skeleton className="h-8 w-[190px]" />}
-            >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lg:hidden"
+                    aria-label="Open filters"
+                  >
+                    <SlidersHorizontal className="size-4" />
+                    Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-6">
+                    <Suspense
+                      fallback={
+                        <div className="flex flex-col gap-4">
+                          <Skeleton className="h-9 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      }
+                    >
+                      <FilterPanel
+                        categories={categories}
+                        priceBounds={priceBounds}
+                        total={meta.total}
+                      />
+                    </Suspense>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <p className="text-sm text-muted-foreground">
+                Showing{" "}
+                <span className="font-medium text-foreground">
+                  {meta.total === 0 ? 0 : start}–{end}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-foreground">{meta.total}</span>
+              </p>
+            </div>
+            <Suspense fallback={<Skeleton className="h-8 w-[190px]" />}>
               <SortSelect />
             </Suspense>
           </div>

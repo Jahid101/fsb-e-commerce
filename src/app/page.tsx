@@ -29,7 +29,7 @@ const PERKS = [
 
 export default function HomePage() {
   const featured = queryProducts({ sort: "featured", limit: 8 }).data;
-  const heroProducts = queryProducts({ sort: "featured", limit: 3 }).data;
+  const heroProducts = featured.slice(0, 3);
   const categories = getCategories()
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);

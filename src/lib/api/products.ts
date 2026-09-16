@@ -165,11 +165,3 @@ export function getRelatedProducts(id: number, limit = 4): Product[] {
 export function getTotalProductCount(): number {
   return allProducts.length;
 }
-
-export function searchTags(): string[] {
-  const tags = new Set<string>();
-  for (const product of allProducts) {
-    for (const tag of product.tags) tags.add(tag);
-  }
-  return [...tags].sort((a, b) => a.localeCompare(b));
-}

@@ -145,7 +145,8 @@ export function FilterPanel({
     [],
   );
 
-  const clearAll = () =>
+  const clearAll = () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     update({
       q: null,
       category: null,
@@ -156,6 +157,7 @@ export function FilterPanel({
       _order: null,
       _page: null,
     });
+  };
 
   const hasFilters = Boolean(
     q || category !== "all" || rating !== "any" || priceGte || priceLte,
