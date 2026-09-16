@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Store } from "lucide-react";
+import { Menu, Store } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CartButton } from "@/components/cart-button";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -60,6 +70,51 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="sm:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="sm:hidden">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <nav aria-label="Mobile" className="flex flex-col gap-1 px-2">
+                {NAV_ITEMS.map((item) => {
+                  const active = item.exact
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href);
+                  return (
+                    <SheetClose asChild key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    </SheetClose>
+                  );
+                })}
+              </nav>
+              <SheetFooter>
+                <p className="text-xs text-muted-foreground">
+                  Great products, honest prices.
+                </p>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
           <ThemeToggle />
           <CartButton />
         </div>

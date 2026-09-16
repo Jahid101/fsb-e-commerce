@@ -69,6 +69,41 @@ type CheckoutValues = z.infer<typeof checkoutSchema>;
 
 const FREE_SHIPPING_THRESHOLD = 100;
 const SHIPPING_COST = 5.99;
+const LAST_ORDER_KEY = "shophub-last-order";
+
+interface OrderItem {
+  id: number;
+  title: string;
+  price: number;
+  quantity: number;
+}
+
+interface Order {
+  id: string;
+  placedAt: string;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+}
+
+function readLastOrder(): Order | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LAST_ORDER_KEY);
+    return raw ? (JSON.parse(raw) as Order) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastOrder(order: Order): void {
+  try {
+    window.localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
+  } catch {
+    return;
+  }
+}
 
 function formatCardNumber(value: string): string {
   return value
@@ -87,7 +122,11 @@ function formatExpiry(value: string): string {
 export function CheckoutView() {
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
-  const [orderId, setOrderId] = React.useState<string | null>(null);
+  const [order, setOrder] = React.useState<Order | null>(null);
+
+  React.useEffect(() => {
+    setOrder(readLastOrder());
+  }, []);
 
   const {
     register,
@@ -121,14 +160,27 @@ export function CheckoutView() {
   const onSubmit = React.useCallback(
     async (values: CheckoutValues) => {
       await new Promise((resolve) => setTimeout(resolve, 600));
-      const id = `SH-${Math.floor(100000 + Math.random() * 900000)}`;
+      const placed: Order = {
+        id: `SH-${Math.floor(100000 + Math.random() * 900000)}`,
+        placedAt: new Date().toISOString(),
+        items: items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        subtotal,
+        shipping,
+        total,
+      };
+      writeLastOrder(placed);
       clearCart();
-      setOrderId(id);
+      setOrder(placed);
     },
-    [clearCart]
+    [items, subtotal, shipping, total, clearCart]
   );
 
-  if (orderId) {
+  if (order) {
     return (
       <div className="mx-auto w-full max-w-xl px-4 py-16 text-center sm:px-6">
         <PartyPopper className="mx-auto size-12 text-primary" />
@@ -137,8 +189,47 @@ export function CheckoutView() {
         </h1>
         <p className="mt-2 text-muted-foreground">
           Thank you for your order. Your confirmation number is{" "}
-          <span className="font-semibold text-foreground">{orderId}</span>
+          <span className="font-semibold text-foreground">{order.id}</span>
         </p>
+        <Card className="mt-6 text-left">
+          <CardContent className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2 text-sm">
+              {order.items.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="line-clamp-1 text-muted-foreground">
+                    {item.title}
+                    <span className="text-foreground">
+                      {" "}
+                      × {item.quantity}
+                    </span>
+                  </span>
+                  <span className="whitespace-nowrap font-medium">
+                    {formatPrice(item.price * item.quantity)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Separator />
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatPrice(order.subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Shipping</span>
+              <span>
+                {order.shipping === 0 ? "Free" : formatPrice(order.shipping)}
+              </span>
+            </div>
+            <Separator />
+            <div className="flex justify-between font-semibold">
+              <span>Order total</span>
+              <span>{formatPrice(order.total)}</span>
+            </div>
+          </CardContent>
+        </Card>
         <Button className="mt-6 h-10" asChild>
           <Link href="/products">
             Continue shopping

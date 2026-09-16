@@ -2,11 +2,18 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { FilterPanel } from "@/components/products/filter-panel";
 import { SortSelect } from "@/components/products/sort-select";
 import { Pagination } from "@/components/products/pagination";
@@ -218,7 +225,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:sticky lg:top-16 lg:h-fit">
+        <aside className="hidden lg:sticky lg:top-16 lg:block lg:h-fit">
           <Suspense
             fallback={
               <div className="flex flex-col gap-4">
@@ -238,18 +245,54 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </aside>
 
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              Showing{" "}
-              <span className="font-medium text-foreground">
-                {meta.total === 0 ? 0 : start}–{end}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{meta.total}</span>
-            </p>
-            <Suspense
-              fallback={<Skeleton className="h-8 w-[190px]" />}
-            >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lg:hidden"
+                    aria-label="Open filters"
+                  >
+                    <SlidersHorizontal className="size-4" />
+                    Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-6">
+                    <Suspense
+                      fallback={
+                        <div className="flex flex-col gap-4">
+                          <Skeleton className="h-9 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      }
+                    >
+                      <FilterPanel
+                        categories={categories}
+                        priceBounds={priceBounds}
+                        total={meta.total}
+                      />
+                    </Suspense>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <p className="text-sm text-muted-foreground">
+                Showing{" "}
+                <span className="font-medium text-foreground">
+                  {meta.total === 0 ? 0 : start}–{end}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-foreground">{meta.total}</span>
+              </p>
+            </div>
+            <Suspense fallback={<Skeleton className="h-8 w-[190px]" />}>
               <SortSelect />
             </Suspense>
           </div>
