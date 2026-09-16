@@ -12,7 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/product/product-card";
-import { ProductPrice, ProductRating } from "@/components/product/product-price";
+import {
+  ProductPrice,
+  ProductRating,
+} from "@/components/product/product-price";
 import { getCategories, queryProducts } from "@/lib/api/products";
 import { categoryHue } from "@/lib/category-color";
 import { formatPrice } from "@/lib/format";
@@ -60,7 +63,7 @@ export default function HomePage() {
               style={{ animationDelay: "0ms" }}
             >
               <Sparkles className="size-3.5" />
-              Fresh picks, fast shipping
+              Fresh picks, Fast shipping
             </span>
 
             <h1
@@ -88,21 +91,21 @@ export default function HomePage() {
             >
               <Button
                 size="lg"
-                className="bg-white text-violet-700 shadow-lg hover:bg-white/90"
+                className="group relative isolate overflow-hidden bg-white text-violet-700 shadow-lg shadow-violet-950/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:shadow-violet-950/35 h-12"
                 asChild
               >
                 <Link href="/products">
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-violet-200/70 to-transparent transition-transform duration-500 ease-out group-hover:translate-x-full"
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute -z-10 -inset-1 rounded-xl bg-white/30 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100"
+                  />
                   Shop all products
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white/40 bg-white/10 text-white backdrop-blur hover:bg-white/20"
-                asChild
-              >
-                <Link href="/product/1">View a product page</Link>
               </Button>
             </div>
           </div>
@@ -143,7 +146,7 @@ export default function HomePage() {
             ))}
 
             <span
-              className="animate-float-slow absolute top-6 -right-2 z-40 inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-bold text-amber-950 shadow-lg"
+              className="animate-float-fast absolute top-6 -right-2 z-40 inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-bold text-amber-950 shadow-lg"
               style={{ animationDelay: "700ms" }}
             >
               <Sparkles className="size-3.5" />

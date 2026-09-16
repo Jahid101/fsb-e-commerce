@@ -172,7 +172,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <ProductGallery product={product} />
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-center gap-2 text-sm">
             <Badge variant={stock.tone}>{stock.label}</Badge>
             <span className="text-muted-foreground">SKU: {product.sku}</span>
@@ -246,38 +246,52 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <Separator className="my-10" />
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        <section>
+        <section className="animate-fade-up">
           <h2 className="mb-4 text-xl font-semibold">
             Customer reviews ({product.reviews.length})
           </h2>
           {product.reviews.length > 0 ? (
-            <ul className="flex flex-col gap-3">
-              {product.reviews.map((review, index) => (
-                <Card key={index}>
-                  <CardContent className="flex flex-col gap-2 p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">
-                        {review.reviewerName}
-                      </span>
-                      <time
-                        className="text-xs text-muted-foreground"
-                        dateTime={review.date}
-                      >
-                        {new Date(review.date).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </time>
-                    </div>
-                    <ProductRating rating={review.rating} />
-                    <p className="text-sm text-muted-foreground">
-                      {review.comment}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </ul>
+            <>
+              <div className="mb-4 flex items-center gap-3 rounded-xl border bg-muted/50 p-4">
+                <span className="text-3xl font-bold text-primary">
+                  {product.rating.toFixed(1)}
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <ProductRating rating={product.rating} />
+                  <p className="text-xs text-muted-foreground">
+                    Based on {product.reviews.length}{" "}
+                    {product.reviews.length === 1 ? "review" : "reviews"}
+                  </p>
+                </div>
+              </div>
+              <ul className="flex flex-col gap-3">
+                {product.reviews.map((review, index) => (
+                  <Card key={index}>
+                    <CardContent className="flex flex-col gap-2 p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          {review.reviewerName}
+                        </span>
+                        <time
+                          className="text-xs text-muted-foreground"
+                          dateTime={review.date}
+                        >
+                          {new Date(review.date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </time>
+                      </div>
+                      <ProductRating rating={review.rating} />
+                      <p className="text-sm text-muted-foreground">
+                        {review.comment}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </ul>
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">
               No reviews yet for this product.
@@ -311,9 +325,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
 
       {related.length > 0 && (
-        <section className="mt-10">
-          <h2 className="mb-4 text-xl font-semibold">Related products</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <section className="animate-fade-up mt-10">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">Related products</h2>
+            <Link
+              href={`/products?category=${encodeURIComponent(product.category)}`}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              View more in {product.category.replace(/-/g, " ")}
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {related.map((item) => (
               <ProductCard key={item.id} product={item} />
             ))}

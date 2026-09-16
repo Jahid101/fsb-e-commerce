@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Search, X } from "lucide-react";
+import { Search, Star, StarHalf, X } from "lucide-react";
+import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { useFilterRouter } from "@/hooks/use-filter-router";
+import { clamp, formatPrice } from "@/lib/format";
 import type { CategorySummary } from "@/lib/api/types";
 
 interface FilterPanelProps {
@@ -24,12 +27,50 @@ interface FilterPanelProps {
   total: number;
 }
 
-const RATING_OPTIONS = [
-  { value: "4.5", label: "4.5 & up" },
-  { value: "4", label: "4 & up" },
-  { value: "3", label: "3 & up" },
-  { value: "2", label: "2 & up" },
-];
+const RATING_CHIPS = [
+  { value: "any", rating: null },
+  { value: "4.5", rating: 4.5 },
+  { value: "4", rating: 4 },
+  { value: "3", rating: 3 },
+  { value: "2", rating: 2 },
+] as const;
+
+function RatingStars({
+  value,
+  className,
+}: {
+  value: number;
+  className?: string;
+}) {
+  const filled = Math.floor(value);
+  const hasHalf = value - filled >= 0.5;
+  return (
+    <span
+      className={cn("inline-flex items-center gap-0.5", className)}
+      aria-hidden
+    >
+      {Array.from({ length: 5 }, (_, index) => {
+        if (index < filled)
+          return (
+            <Star
+              key={index}
+              className="size-3.5 fill-amber-400 text-amber-400"
+            />
+          );
+        if (index === filled && hasHalf)
+          return (
+            <StarHalf
+              key={index}
+              className="size-3.5 fill-amber-400 text-amber-400"
+            />
+          );
+        return (
+          <Star key={index} className="size-3.5 text-muted-foreground/40" />
+        );
+      })}
+    </span>
+  );
+}
 
 function humanizeCategory(name: string): string {
   return name.replace(/-/g, " ");
@@ -49,20 +90,43 @@ export function FilterPanel({
   const priceLte = searchParams.get("price_lte") ?? "";
 
   const [searchValue, setSearchValue] = React.useState(q);
-  const [minValue, setMinValue] = React.useState(priceGte);
-  const [maxValue, setMaxValue] = React.useState(priceLte);
+
+  const priceMin = Math.floor(priceBounds.min);
+  const priceMax = Math.ceil(priceBounds.max);
+  const parsedGte = priceGte ? parseFloat(priceGte) : NaN;
+  const parsedLte = priceLte ? parseFloat(priceLte) : NaN;
+  const [minPrice, setMinPrice] = React.useState(
+    Number.isFinite(parsedGte)
+      ? clamp(parsedGte, priceMin, priceMax)
+      : priceMin,
+  );
+  const [maxPrice, setMaxPrice] = React.useState(
+    Number.isFinite(parsedLte)
+      ? clamp(parsedLte, priceMin, priceMax)
+      : priceMax,
+  );
 
   React.useEffect(() => {
     setSearchValue(q);
   }, [q]);
   React.useEffect(() => {
-    setMinValue(priceGte);
-  }, [priceGte]);
+    setMinPrice(
+      Number.isFinite(parsedGte)
+        ? clamp(parsedGte, priceMin, priceMax)
+        : priceMin,
+    );
+  }, [priceGte, priceMin, priceMax]);
   React.useEffect(() => {
-    setMaxValue(priceLte);
-  }, [priceLte]);
+    setMaxPrice(
+      Number.isFinite(parsedLte)
+        ? clamp(parsedLte, priceMin, priceMax)
+        : priceMax,
+    );
+  }, [priceLte, priceMin, priceMax]);
 
-  const debounceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const applySearch = React.useCallback(
     (value: string) => {
@@ -71,14 +135,14 @@ export function FilterPanel({
         update({ q: value || null, _page: null }, { resetPage: true });
       }, 350);
     },
-    [update]
+    [update],
   );
 
   React.useEffect(
     () => () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     },
-    []
+    [],
   );
 
   const clearAll = () =>
@@ -93,7 +157,9 @@ export function FilterPanel({
       _page: null,
     });
 
-  const hasFilters = Boolean(q || category !== "all" || rating !== "any" || priceGte || priceLte);
+  const hasFilters = Boolean(
+    q || category !== "all" || rating !== "any" || priceGte || priceLte,
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -126,7 +192,7 @@ export function FilterPanel({
           onValueChange={(value) =>
             update(
               { category: value === "all" ? null : value, _page: null },
-              { resetPage: true }
+              { resetPage: true },
             )
           }
         >
@@ -156,21 +222,40 @@ export function FilterPanel({
           onValueChange={(value) =>
             update(
               { rating_gte: value === "any" ? null : value, _page: null },
-              { resetPage: true }
+              { resetPage: true },
             )
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Any rating" />
+            <SelectValue placeholder="Any rating">
+              {(() => {
+                const selected = RATING_CHIPS.find(
+                  (chip) => chip.value === rating && chip.rating !== null,
+                );
+                return selected && selected.rating !== null ? (
+                  <span className="inline-flex items-center gap-1">
+                    <RatingStars value={selected.rating} />
+                    <span>&nbsp;& up</span>
+                  </span>
+                ) : (
+                  "Any rating"
+                );
+              })()}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="any">Any rating</SelectItem>
-              {RATING_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
+              {RATING_CHIPS.filter((chip) => chip.rating !== null).map(
+                (chip) => (
+                  <SelectItem key={chip.value} value={chip.value}>
+                    <span className="inline-flex items-center gap-1">
+                      <RatingStars value={chip.rating as number} />
+                      <span>&nbsp;& up</span>
+                    </span>
+                  </SelectItem>
+                ),
+              )}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -179,85 +264,54 @@ export function FilterPanel({
       <Separator />
 
       <div>
-        <Label className="mb-2 block">
-          Price range — ${priceBounds.min.toFixed(2)} to ${priceBounds.max.toFixed(2)}
-        </Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            placeholder="Min"
-            aria-label="Minimum price"
-            value={minValue}
-            onChange={(event) => setMinValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                update(
-                  {
-                    price_gte: minValue || null,
-                    price_lte: maxValue || null,
-                    _page: null,
-                  },
-                  { resetPage: true }
-                );
-              }
-            }}
-          />
-          <span className="text-muted-foreground">–</span>
-          <Input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            placeholder="Max"
-            aria-label="Maximum price"
-            value={maxValue}
-            onChange={(event) => setMaxValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                update(
-                  {
-                    price_gte: minValue || null,
-                    price_lte: maxValue || null,
-                    _page: null,
-                  },
-                  { resetPage: true }
-                );
-              }
-            }}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              update(
-                {
-                  price_gte: minValue || null,
-                  price_lte: maxValue || null,
-                  _page: null,
-                },
-                { resetPage: true }
-              )
-            }
-          >
-            Apply
-          </Button>
+        <div className="space-y-2 items-center justify-between gap-2">
+          <Label>Price range</Label>
+          <p className="text-sm font-medium text-primary tabular-nums">
+            {formatPrice(minPrice)} – {formatPrice(maxPrice)}
+          </p>
+        </div>
+        <Slider
+          aria-label="Price range"
+          min={priceMin}
+          max={priceMax}
+          step={1}
+          value={[minPrice, maxPrice]}
+          onValueChange={(values) => {
+            setMinPrice(values[0]);
+            setMaxPrice(values[1]);
+          }}
+          onValueCommit={(values) =>
+            update(
+              {
+                price_gte: values[0] > priceMin ? String(values[0]) : null,
+                price_lte: values[1] < priceMax ? String(values[1]) : null,
+                _page: null,
+              },
+              { resetPage: true },
+            )
+          }
+          className="py-2"
+        />
+        <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
+          <span>{formatPrice(priceMin)}</span>
+          <span>{formatPrice(priceMax)}</span>
         </div>
       </div>
 
+      <Separator />
+
+      <p className="text-sm text-muted-foreground">
+        {total} product{total === 1 ? "" : "s"} match
+      </p>
+
       {hasFilters && (
         <>
-          <Separator />
           <Button variant="outline" size="sm" onClick={clearAll}>
             <X className="size-4" />
             Clear all filters
           </Button>
         </>
       )}
-
-      <p className="text-sm text-muted-foreground">
-        {total} product{total === 1 ? "" : "s"} match
-      </p>
     </div>
   );
 }

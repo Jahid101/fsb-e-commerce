@@ -15,7 +15,6 @@ export const allProducts = (
 export const DEFAULT_PAGE_LIMIT = 12;
 export const MAX_PAGE_LIMIT = 48;
 
-/** DummyJSON "price" is already discounted; original = price / (1 - discount%). */
 export function originalPrice(product: Product): number {
   if (!product.discountPercentage || product.discountPercentage <= 0) {
     return product.price;
