@@ -15,14 +15,18 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { FilterPanel } from "@/components/products/filter-panel";
+import { LimitSelect } from "@/components/products/limit-select";
 import { SortSelect } from "@/components/products/sort-select";
 import { Pagination } from "@/components/products/pagination";
+import { VirtualProductGrid } from "@/components/products/virtual-product-grid";
 import { ProductCard } from "@/components/product/product-card";
 import {
   getCategories,
   getPriceBounds,
   queryProducts,
+  toProductCardData,
   DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
 } from "@/lib/api/products";
 import type { ProductQuery, ProductSort } from "@/lib/api/types";
 import { firstValue, numericParam } from "@/lib/url";
@@ -74,6 +78,7 @@ function buildCurrentHref(
 
 const VALID_SORTS = new Set(["featured", "price", "rating", "title"]);
 const VALID_RATINGS = new Set([2, 3, 4, 4.5]);
+const VALID_PAGE_LIMITS = new Set([12, 24, 50, 100]);
 
 function parseQuery(
   raw: Record<string, string | string[] | undefined>,
@@ -112,6 +117,19 @@ function parseQuery(
       : undefined;
   const page = numericParam(raw._page) ?? 1;
 
+  const rawLimit = firstValue(raw._limit);
+  const limitUrl =
+    rawLimit === "all"
+      ? "all"
+      : Number.isInteger(Number(rawLimit)) &&
+          VALID_PAGE_LIMITS.has(Number(rawLimit))
+        ? String(Number(rawLimit))
+        : String(DEFAULT_PAGE_LIMIT);
+  const limit =
+    limitUrl === "all"
+      ? MAX_PAGE_LIMIT
+      : Number(limitUrl);
+
   const buildHref = (pageNumber: number) => {
     const next = new URLSearchParams();
     if (q) next.set("q", q);
@@ -121,6 +139,7 @@ function parseQuery(
     if (ratingGte !== undefined) next.set("rating_gte", String(ratingGte));
     if (sort !== "featured") next.set("_sort", sort);
     if (order === "asc" || order === "desc") next.set("_order", order);
+    if (limitUrl !== String(DEFAULT_PAGE_LIMIT)) next.set("_limit", limitUrl);
     if (pageNumber > 1) next.set("_page", String(pageNumber));
     const query = next.toString();
     return query ? `/products?${query}` : "/products";
@@ -136,6 +155,7 @@ function parseQuery(
       sort,
       order,
       page,
+      limit,
     },
     buildHref,
     q,
@@ -183,7 +203,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: q ? `Search results for "${q}"` : category ? category.replace(/-/g, " ") : "All products",
-    numberOfItems: data.length,
+    numberOfItems: meta.total,
     itemListElement: data.map((product, index) => ({
       "@type": "ListItem",
       position: (meta.page - 1) * meta.limit + index + 1,
@@ -247,7 +267,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-
               {/* Mobile filter sheet */}
               <Sheet>
                 <SheetTrigger asChild>
@@ -285,7 +304,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   </div>
                 </SheetContent>
               </Sheet>
-              
+
               <p className="text-sm text-muted-foreground">
                 Showing{" "}
                 <span className="font-medium text-foreground">
@@ -301,17 +320,24 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </div>
 
           {data.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {data.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${(index % 6) * 40}ms` }}
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
+            meta.limit >= 100 ? (
+              <VirtualProductGrid
+                key={`${meta.page}-${meta.limit}-${data[0].id}`}
+                products={data.map(toProductCardData)}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {data.map((product, index) => (
+                  <div
+                    key={product.id}
+                    className="animate-fade-up"
+                    style={{ animationDelay: `${(index % 6) * 40}ms` }}
+                  >
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
             <Card className="flex flex-col items-center justify-center gap-4 border-dashed p-12 text-center">
               <PackageOpen className="size-12 text-muted-foreground" />
@@ -328,11 +354,16 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </Card>
           )}
 
-          <Pagination
-            currentPage={meta.page}
-            totalPages={meta.totalPages}
-            buildHref={buildHref}
-          />
+          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+            <Suspense fallback={<Skeleton className="h-9 w-40" />}>
+              <LimitSelect />
+            </Suspense>
+            <Pagination
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              buildHref={buildHref}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -6,7 +6,11 @@ import type { Product } from "@/lib/api/types";
 
 import { Badge } from "@/components/ui/badge";
 
-export function ProductPrice({ product }: { product: Product }) {
+export function ProductPrice({
+  product,
+}: {
+  product: Pick<Product, "price" | "discountPercentage">;
+}) {
   const original = originalPrice(product);
   const onSale = original > product.price + 0.005;
 
