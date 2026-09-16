@@ -247,6 +247,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
+
+              {/* Mobile filter sheet */}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
@@ -283,6 +285,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   </div>
                 </SheetContent>
               </Sheet>
+              
               <p className="text-sm text-muted-foreground">
                 Showing{" "}
                 <span className="font-medium text-foreground">
