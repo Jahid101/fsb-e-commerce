@@ -113,14 +113,9 @@ export function CheckoutView() {
         </h1>
         <p className="mt-2 text-muted-foreground">
           Thank you for your order. Your confirmation number is{" "}
-          <span className="font-semibold text-foreground">{orderId}</span> and
-          the total was{" "}
-          <span className="font-semibold text-foreground">
-            {formatPrice(total)}
-          </span>
-          . No payment was processed.
+          <span className="font-semibold text-foreground">{orderId}</span>
         </p>
-        <Button className="mt-6" asChild>
+        <Button className="mt-6 h-10" asChild>
           <Link href="/products">
             Continue shopping
             <ArrowRight className="size-4" />
@@ -138,7 +133,7 @@ export function CheckoutView() {
         <p className="mt-2 text-muted-foreground">
           Add products to your cart before proceeding to checkout.
         </p>
-        <Button className="mt-6" asChild>
+        <Button className="mt-6 h-10" asChild>
           <Link href="/products">
             Browse products
             <ArrowRight className="size-4" />
@@ -414,7 +409,8 @@ export function CheckoutView() {
               <span>{formatPrice(total)}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              No payment is processed. Use any plausible test card details.
+              This is a secure, encrypted checkout. No card is charged until you
+              review your order.
             </p>
           </CardContent>
         </Card>
