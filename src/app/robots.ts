@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/cart", "/checkout"],
+        disallow: ["/cart", "/checkout"],
       },
     ],
     sitemap: "https://fsb-e-commerce.vercel.app/sitemap.xml",

@@ -103,7 +103,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Footer />
           </div>
           <SiteStructuredData />
-          <Toaster />
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>
