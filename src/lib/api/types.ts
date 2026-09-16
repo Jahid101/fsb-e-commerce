@@ -81,3 +81,8 @@ export interface PriceBounds {
   min: number;
   max: number;
 }
+
+export type ProductCardData = Pick<
+  Product,
+  "id" | "title" | "thumbnail" | "category" | "rating" | "stock" | "discountPercentage" | "price"
+>;

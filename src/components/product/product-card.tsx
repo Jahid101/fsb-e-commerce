@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -5,9 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductPrice, ProductRating } from "@/components/product/product-price";
 import { AddToCartButton } from "@/components/product/add-to-cart-button";
-import type { Product } from "@/lib/api/types";
+import type { ProductCardData } from "@/lib/api/types";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: ProductCardData }) {
   const outOfStock = product.stock <= 0;
   const slug = `/product/${product.id}`;
 

@@ -4,6 +4,7 @@ import type {
   CategorySummary,
   PriceBounds,
   Product,
+  ProductCardData,
   ProductListResponse,
   ProductQuery,
 } from "./types";
@@ -13,13 +14,28 @@ export const allProducts = (
 ).products;
 
 export const DEFAULT_PAGE_LIMIT = 12;
-export const MAX_PAGE_LIMIT = 48;
+export const MAX_PAGE_LIMIT = allProducts.length;
 
-export function originalPrice(product: Product): number {
+export function originalPrice(
+  product: Pick<Product, "price" | "discountPercentage">
+): number {
   if (!product.discountPercentage || product.discountPercentage <= 0) {
     return product.price;
   }
   return product.price / (1 - product.discountPercentage / 100);
+}
+
+export function toProductCardData(product: Product): ProductCardData {
+  return {
+    id: product.id,
+    title: product.title,
+    thumbnail: product.thumbnail,
+    category: product.category,
+    rating: product.rating,
+    stock: product.stock,
+    discountPercentage: product.discountPercentage,
+    price: product.price,
+  };
 }
 
 function normalizeText(value: string): string {
