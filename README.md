@@ -57,11 +57,6 @@ Requires Node.js ≥ 20.9 (Next.js 16 requirement).
 ```text
 src/
 ├── app/
-│   ├── api/                       # Route Handlers (HTTP API layer)
-│   │   └── products/
-│   │       ├── route.ts           #   GET /api/products      (query params)
-│   │       ├── [id]/route.ts      #   GET /api/products/[id] (404 handling)
-│   │       └── categories/route.ts#   GET /api/products/categories
 │   ├── products/page.tsx          # Listing page (Server Component, URL filters)
 │   ├── product/[id]/page.tsx      # Detail page (SSR, generateMetadata, JSON-LD)
 │   ├── cart/page.tsx              # Cart (server shell + client view)
@@ -91,23 +86,18 @@ src/
 ## Data & API architecture
 
 - **No external API at runtime.** The app ships with `src/data/products.json` (582 products, 24 categories, full DummyJSON-style schema). This works identically on a laptop and on Vercel serverless.
-- **Dataset**: generated from DummyJSON’s public 194-product feed by a seeded, deterministic generator: each source product is cloned 3× with unique `id`s (1–582) and `SKU`s, varied titles/prices/ratings/stocks, regenerated reviews and images. 5 products are intentionally `stock = 0` to exercise out-of-stock states.
-- **Two consumption modes** share the same service functions:
+  - **Dataset**: generated from DummyJSON's public 194-product feed by a seeded, deterministic generator: each source product is cloned 3× with unique `id`s (1–582) and `SKU`s, varied titles/prices/ratings/stocks, regenerated reviews and images. 5 products are intentionally `stock = 0` to exercise out-of-stock states.
+  - **Everything runs in-process.** Server Components import `src/lib/api/products.ts` directly and call `queryProducts(...)` / `getProduct(...)`. No network hop, no HTTP endpoint to deploy or secure. `searchParams` from the URL are parsed into a typed `ProductQuery` and applied server-side:
 
-  1. **In-process (default for pages)**. Server Components import `src/lib/api/products.ts` directly and call `queryProducts(...)`. No network hop, no duplicate fetches, works on serverless. `searchParams` from the URL are parsed into a typed `ProductQuery` and applied server-side.
-  2. **HTTP (for client components / external consumers)**. The same logic is exposed through Route Handlers at `/api/products` with json-server-style query params:
+    - `q` — full-text search (title, description, brand, tags, category)
+    - `category` — exact category slug
+    - `price_gte`, `price_lte` — price range
+    - `rating_gte` — minimum rating
+    - `_sort` — `featured` | `price` | `rating` | `title`
+    - `_order` — `asc` | `desc`
+    - `_page`, `_limit` — pagination (clamped)
 
-     | Param | Meaning |
-     | --- | --- |
-     | `q` | full-text search (title, description, brand, tags, category) |
-     | `category` | exact category slug |
-     | `price_gte`, `price_lte` | price range |
-     | `rating_gte` | minimum rating |
-     | `_sort` | `featured` \| `price` \| `rating` \| `title` |
-     | `_order` | `asc` \| `desc` |
-     | `_page`, `_limit` | pagination (clamped) |
-
-  Both modes return `{ data, meta: { total, page, limit, totalPages } }` (or a product / `404` JSON for `[id]`). **Components never contain query/filter/pagination logic** — that all lives in `src/lib/api/products.ts`, so the two modes can never drift.
+  Every lookup returns `{ data, meta: { total, page, limit, totalPages } }`. **Components never contain query/filter/pagination logic** — that all lives in `src/lib/api/products.ts`, and the recipe for a real backend later would be to reimplement that one module, not touch any views.
 
 - **Related products** (`getRelatedProducts`) prefer same-category, in-stock, top-rated items and backfill from elsewhere, avoiding empty rails.
 
@@ -133,7 +123,7 @@ Rule of thumb used: *server by default, client only where interactivity or brows
 
 ## Performance decisions
 
-- **No duplicate fetches**: pages query the bundled data once on the server; the HTTP API only exists for client/ephemeral needs.
+- **No duplicate fetches**: pages query the bundled data once on the server — there is no separate API to call.
 - **`useMemo`** for expensive derived totals (cart/checkout summaries).
 - **`useEffect` only for real side effects** (syncing local input state to URL params); the debounced search uses a ref-guarded timer with cleanup.
 - **Memoized callbacks** (`useCallback` in the filter router) and small, purpose-built client islands rather than large client trees; `React.memo`-style isolation is implicit via Server Components.
@@ -153,7 +143,7 @@ vercel --prod     # production
 
 Or push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new). No environment variables are required — the dataset is bundled.
 
-> The API routes work on Vercel because they read the bundled JSON (no filesystem/DB dependency). Server Components use the same functions in-process, so nothing extra is deployed.
+> No environment variables or backend are required — the dataset is bundled and read in-process, so the same code runs identically on a laptop or on Vercel.
 
 ---
 
