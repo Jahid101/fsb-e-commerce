@@ -144,11 +144,3 @@ vercel --prod     # production
 Or push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new). No environment variables are required — the dataset is bundled.
 
 > No environment variables or backend are required — the dataset is bundled and read in-process, so the same code runs identically on a laptop or on Vercel.
-
----
-
-## Notes / omissions
-
-- Checkout is simulated: placing an order validates the form, shows a confirmation, and clears the cart; no payment backend.
-- Product images for generated variants come from `picsum.photos` seeds — internet required for full visuals.
-- `npm run lint` is not configured (the create-next-app scaffold didn’t include ESLint); type-checking runs as part of `npm run build`.
