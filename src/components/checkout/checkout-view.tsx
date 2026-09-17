@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CheckCircle2, PartyPopper } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, PartyPopper } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useCartStore } from "@/store/cart";
+import { useCartStore, useCartHydrated } from "@/store/cart";
 import { formatPrice } from "@/lib/format";
 
 function luhnCheck(value: string): boolean {
@@ -70,6 +70,7 @@ type CheckoutValues = z.infer<typeof checkoutSchema>;
 const FREE_SHIPPING_THRESHOLD = 100;
 const SHIPPING_COST = 5.99;
 const LAST_ORDER_KEY = "shophub-last-order";
+const ORDER_CONFIRMATION_MS = 6000;
 
 interface OrderItem {
   id: number;
@@ -105,6 +106,14 @@ function writeLastOrder(order: Order): void {
   }
 }
 
+function removeLastOrder(): void {
+  try {
+    window.localStorage.removeItem(LAST_ORDER_KEY);
+  } catch {
+    return;
+  }
+}
+
 function formatCardNumber(value: string): string {
   return value
     .replaceAll(" ", "")
@@ -122,11 +131,22 @@ function formatExpiry(value: string): string {
 export function CheckoutView() {
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
+  const cartHydrated = useCartHydrated();
+  const [orderLoaded, setOrderLoaded] = React.useState(false);
   const [order, setOrder] = React.useState<Order | null>(null);
 
   React.useEffect(() => {
     setOrder(readLastOrder());
+    setOrderLoaded(true);
   }, []);
+
+  // The confirmation should be seen once: after a short grace period the saved
+  // copy is deleted, so a later reload lands on the normal empty-cart state.
+  React.useEffect(() => {
+    if (!order) return;
+    const timer = window.setTimeout(removeLastOrder, ORDER_CONFIRMATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [order]);
 
   const {
     register,
@@ -179,6 +199,21 @@ export function CheckoutView() {
     },
     [items, subtotal, shipping, total, clearCart]
   );
+
+  if (!cartHydrated || !orderLoaded) {
+    return (
+      <div
+        role="status"
+        className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 px-4 py-24 text-center sm:px-6"
+      >
+        <Loader2
+          className="size-8 animate-spin text-muted-foreground"
+          aria-hidden="true"
+        />
+        <p className="text-sm text-muted-foreground">Loading your checkout…</p>
+      </div>
+    );
+  }
 
   if (order) {
     return (

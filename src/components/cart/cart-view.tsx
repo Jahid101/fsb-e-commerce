@@ -3,12 +3,12 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowRight, Loader2, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useCartStore } from "@/store/cart";
+import { useCartStore, useCartHydrated } from "@/store/cart";
 import { formatPrice } from "@/lib/format";
 
 const FREE_SHIPPING_THRESHOLD = 100;
@@ -19,6 +19,7 @@ export function CartView() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
   const clearCart = useCartStore((state) => state.clearCart);
+  const cartHydrated = useCartHydrated();
 
   const subtotal = React.useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
@@ -31,6 +32,21 @@ export function CartView() {
   }, [items.length, subtotal]);
 
   const total = React.useMemo(() => subtotal + shipping, [subtotal, shipping]);
+
+  if (!cartHydrated) {
+    return (
+      <div
+        role="status"
+        className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 px-4 py-24 text-center sm:px-6"
+      >
+        <Loader2
+          className="size-8 animate-spin text-muted-foreground"
+          aria-hidden="true"
+        />
+        <p className="text-sm text-muted-foreground">Loading your cart…</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

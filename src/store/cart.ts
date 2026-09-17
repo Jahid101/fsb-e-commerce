@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useSyncExternalStore } from "react";
 
 export interface CartItem {
   id: number;
@@ -83,6 +84,25 @@ export const useCartStore = create<CartState>()(
 export function useCartItemCount(): number {
   return useCartStore((state) =>
     state.items.reduce((sum, item) => sum + item.quantity, 0)
+  );
+}
+
+/**
+ * True once the persisted cart has been read back from localStorage.
+ * Views that depend on `items` should wait for this before rendering,
+ * otherwise they flash an empty state on reload.
+ */
+export function useCartHydrated(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      // The persist API is only attached when storage is available, i.e. never
+      // during server rendering. Guard so the hook works in SSR too.
+      const persistApi = useCartStore.persist;
+      if (!persistApi) return () => undefined;
+      return persistApi.onFinishHydration(onStoreChange);
+    },
+    () => useCartStore.persist?.hasHydrated() ?? true,
+    () => false
   );
 }
 
