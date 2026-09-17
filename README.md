@@ -8,7 +8,7 @@ Live site: [fsb-e-commerce.vercel.app](https://fsb-e-commerce.vercel.app/)
 
 ## Features
 
-- **Product listing** with URL-driven filtering: full-text search (`q`), category, price range, minimum rating, sorting (featured / price / rating / name) and pagination.
+- **Product listing** with URL-driven filtering: full-text search (`q`), category, price range, minimum rating, sorting (featured / price / rating / name), pagination and per-page sizes (12 / 24 / 50 / 100 / all). Beyond 100 products the grid switches to a virtualized renderer.
 - **Refresh-safe URLs**: every filter lives in the query string, so state survives reloads and is shareable.
 - **Product detail pages** with image gallery, price/discount, stock states (including out-of-stock), reviews, product specs, related products, JSON-LD structured data and SEO metadata.
 - **Cart** — Zustand store persisted to `localStorage`: add/remove, quantity steppers, live totals, free-shipping threshold.
@@ -57,28 +57,32 @@ Requires Node.js ≥ 20.9 (Next.js 16 requirement).
 ```text
 src/
 ├── app/
-│   ├── products/page.tsx          # Listing page (Server Component, URL filters)
-│   ├── product/[id]/page.tsx      # Detail page (SSR, generateMetadata, JSON-LD)
-│   ├── cart/page.tsx              # Cart (server shell + client view)
-│   ├── checkout/page.tsx          # Checkout (server shell + client view)
-│   ├── layout.tsx                 # Root layout: theme provider, header, footer
-│   ├── page.tsx                   # Home / landing
-│   ├── loading.tsx, error.tsx, not-found.tsx
-│   └── sitemap.ts
+│   ├── products/
+│   │   ├── page.tsx                  # Listing page (Server Component, URL filters)
+│   │   └── loading.tsx               # Skeleton shown while results stream in
+│   ├── product/[id]/page.tsx         # Detail page (SSR, generateMetadata, JSON-LD)
+│   ├── cart/page.tsx                 # Cart (server shell + client view)
+│   ├── checkout/page.tsx             # Checkout (server shell + client view)
+│   ├── layout.tsx                    # Root layout: theme provider, header, footer
+│   ├── page.tsx                      # Home / landing
+│   ├── error.tsx  not-found.tsx
+│   └── sitemap.ts  robots.ts
 ├── components/
-│   ├── ui/                        # shadcn/ui primitives
-│   ├── product/                   # ProductCard, Gallery, BuyBox, AddToCartButton…
-│   ├── products/                  # FilterPanel, SortSelect, Pagination
-│   ├── cart/ checkout/            # feature views
-│   ├── header.tsx footer.tsx theme-toggle.tsx
+│   ├── ui/                           # shadcn/ui primitives
+│   ├── product/                      # ProductCard, ProductGallery, ProductBuyBox…
+│   ├── products/                     # FilterPanel, SortSelect, Pagination,
+│   │                                 # LimitSelect, VirtualProductGrid
+│   ├── cart/  checkout/              # feature views
+│   ├── seo/                          # site-wide JSON-LD structured data
+│   ├── header.tsx footer.tsx cart-button.tsx theme-toggle.tsx
 ├── lib/
-│   ├── api/                       # ← API service layer (framework-agnostic)
-│   │   ├── types.ts               #   Product, ProductQuery, responses…
-│   │   └── products.ts            #   queryProducts/getProduct/getCategories/
-│   │                              #   getRelatedProducts/getPriceBounds…
-│   ├── format.ts  url.ts
-├── store/cart.ts                  # Zustand cart store + selectors
-└── data/products.json             # bundled 582-product dataset
+│   ├── api/                          # ← API service layer (framework-agnostic)
+│   │   ├── types.ts                  #   Product, ProductQuery, responses…
+│   │   └── products.ts               #   queryProducts/getProduct/getCategories/
+│   │                                 #   getRelatedProducts/getPriceBounds…
+│   ├── format.ts  url.ts  category-color.ts
+├── store/cart.ts                     # Zustand cart store + selectors
+└── data/products.json                # bundled 582-product dataset
 ```
 
 ---
@@ -129,26 +133,5 @@ Rule of thumb used: *server by default, client only where interactivity or brows
 - **Memoized callbacks** (`useCallback` in the filter router) and small, purpose-built client islands rather than large client trees; `React.memo`-style isolation is implicit via Server Components.
 - **Images** use `next/image` with remote patterns for `cdn.dummyjson.com` and `picsum.photos`; responsive `sizes`, lazy loading, `priority` on the hero gallery image.
 - **Pagination is server-rendered anchor links** building on the current query string — cheap, indexable, refresh-safe.
+- **Large listings are virtualized**: above 100 products per page the grid renders visible rows only (window-based virtualizer, estimated row heights + in-place measurement), instead of shipping all 582 cards to the DOM.
 - **Build output** is mostly static (`/`, `/cart`, `/checkout`, `/sitemap.xml`) with on-demand server rendering for catalog/detail routes.
-
----
-
-## Deploy on Vercel
-
-```bash
-npm i -g vercel
-vercel            # link + deploy preview
-vercel --prod     # production
-```
-
-Or push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new). No environment variables are required — the dataset is bundled.
-
-> No environment variables or backend are required — the dataset is bundled and read in-process, so the same code runs identically on a laptop or on Vercel.
-
----
-
-## Notes / omissions
-
-- Checkout is simulated: placing an order validates the form, shows a confirmation, and clears the cart; no payment backend.
-- Product images for generated variants come from `picsum.photos` seeds — internet required for full visuals.
-- `npm run lint` is not configured (the create-next-app scaffold didn’t include ESLint); type-checking runs as part of `npm run build`.
